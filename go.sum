@@ -6,6 +6,8 @@ github.com/go-viper/mapstructure/v2 v2.5.0 h1:vM5IJoUAy3d7zRSVtIwQgBj7BiWtMPfmPE
 github.com/go-viper/mapstructure/v2 v2.5.0/go.mod h1:oJDH3BJKyqBA2TXFhDsKDGDTlndYOZ6rGS0BRZIxGhM=
 github.com/gofrs/uuid/v5 v5.4.0 h1:EfbpCTjqMuGyq5ZJwxqzn3Cbr2d0rUZU7v5ycAk/e/0=
 github.com/gofrs/uuid/v5 v5.4.0/go.mod h1:CDOjlDMVAtN56jqyRUZh58JT31Tiw7/oQyEXZV+9bD8=
+github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
+github.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/gophercloud/gophercloud/v2 v2.11.1 h1:jCs4vLH8sJgRqrPzqVfWgl7uI6JnIIlsgeIRM0uHjxY=
 github.com/gophercloud/gophercloud/v2 v2.11.1/go.mod h1:Rm0YvKQ4QYX2rY9XaDKnjRzSGwlG5ge4h6ABYnmkKQM=
 github.com/gophercloud/utils/v2 v2.0.0-20260107124036-1d7954eb9711 h1:LgYkb/jttJKwFwZHZjaT8zA/Ef4HMtrosABO/pnSaJI=
