@@ -14,6 +14,7 @@ var (
 	webhookURL      string
 	webhookUsername string
 	webhookPassword string
+	baseQOSPolicy   string
 )
 
 // rootCommand defines the base entry point for the OpenStack Virt Enforcer CLI.
