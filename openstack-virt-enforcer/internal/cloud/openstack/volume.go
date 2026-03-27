@@ -3,6 +3,7 @@ package openstack
 import (
 	"context"
 	"fmt"
+	"maps"
 
 	"github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/qos"
 	"github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/volumes"
@@ -65,4 +66,55 @@ func (c *Client) ListQosSpec(ctx context.Context) ([]qos.QoS, error) {
 		return qoses, err
 	}
 	return qoses, nil
+}
+
+func (c *Client) CreateVolumeSubscription(
+	ctx context.Context,
+	volumeID string,
+	metadata map[string]string,
+) (SubscribedVolume volumes.Volume, RequestID string, Error error) {
+
+	var requestID string
+	var subscribedVolume volumes.Volume
+
+	subscriptionOperation := func(innerCtx context.Context) error {
+		// 1. Get current volume details to retain existing metadata.
+		// We cannot simply overwrite because it might wipe other tags (e.g., billing codes).
+		vol, err := volumes.Get(innerCtx, c.BlockStorageClient, volumeID).Extract()
+		if err != nil {
+			return err
+		}
+
+		// 2. Prepare Metadata Map
+		currentMeta := vol.Metadata
+		if currentMeta == nil {
+			currentMeta = make(map[string]string)
+		}
+
+		// 3. Merge new policy tags into existing tags
+		// Note: New keys overwrite old keys.
+		maps.Copy(currentMeta, metadata)
+
+		opts := volumes.UpdateOpts{
+			Metadata: currentMeta,
+		}
+
+		// 4. Execute Update
+		result := volumes.Update(innerCtx, c.BlockStorageClient, volumeID, opts)
+		requestID = result.Header.Get("X-Openstack-Request-Id")
+
+		updatedVol, err := result.Extract()
+		if err != nil {
+			return err
+		}
+
+		subscribedVolume = *updatedVol
+		return nil
+	}
+
+	if err := c.executeWithRetry(ctx, "CreateVolumeSubscription", subscriptionOperation); err != nil {
+		return volumes.Volume{}, requestID, err
+	}
+
+	return subscribedVolume, requestID, nil
 }

@@ -3,13 +3,9 @@ package workflow
 import (
 	"fmt"
 	"log/slog"
-	"net/url"
 	"os"
-	"time"
 
-	"github.com/aravindh-murugesan/openstack-virt-enforcer/openstack-virt-enforcer/internal/cloud"
-	"github.com/aravindh-murugesan/openstack-virt-enforcer/openstack-virt-enforcer/internal/cloud/openstack"
-	"github.com/digitalocean/go-libvirt"
+	"github.com/google/uuid"
 	"github.com/lmittmann/tint"
 )
 
@@ -38,59 +34,33 @@ func SetupLogger(level string, cloudName string) *slog.Logger {
 	return slog.New(handler).With("cloud_profile", cloudName)
 }
 
-// ConnectToLibvirt establishes a connection to a Libvirt daemon via a URI.
-//
-// If the provided connUrl is empty, it defaults to the local QEMU system
-// socket (qemu:///system). It returns an error if the URI is malformed or
-// if the connection cannot be established.
-func ConnectToLibvirt(connUrl string) (*libvirt.Libvirt, error) {
+func (l *Logger) SetupLogger() {
 
-	if connUrl == "" {
-		connUrl = string(libvirt.QEMUSystem)
+	if l.Level == "" {
+		l.Level = "info"
 	}
 
-	validatedURL, err := url.Parse(connUrl)
-	if err != nil {
-		return nil, err
+	var logLevel slog.Level
+	switch l.Level {
+	case "debug":
+		logLevel = slog.LevelDebug
+	case "warn":
+		logLevel = slog.LevelWarn
+	case "error":
+		logLevel = slog.LevelError
+	default:
+		logLevel = slog.LevelInfo
 	}
 
-	libirtConnection, err := libvirt.ConnectToURI(validatedURL)
-	if err != nil {
-		return nil, err
+	if l.Instance == nil {
+		handler := tint.NewHandler(os.Stderr, &tint.Options{
+			Level:   logLevel,
+			NoColor: false,
+		})
+		l.Instance = slog.New(handler)
 	}
 
-	return libirtConnection, nil
-}
-
-// ConnectToOpenstack initializes an OpenStack client based on a local profile name.
-//
-// It configures the client with an exponential backoff retry strategy:
-//   - MaxRetries: 5
-//   - BaseDelay: 2 seconds
-//   - MaxDelay: 10 seconds
-//   - OperationTimeout: 30 seconds
-//
-// It returns an initialized [openstack.Client] or an error if the profile
-// cannot be authenticated or the service endpoints cannot be resolved.
-func ConnectToOpenstack(cloudName string) (openstack.Client, error) {
-
-	if cloudName == "" {
-		return openstack.Client{}, fmt.Errorf("Cloud profile cannot be empty")
+	if l.RunID == "" {
+		l.RunID = fmt.Sprintf("ve-%s", uuid.NewString())
 	}
-
-	openstackClient := openstack.Client{
-		ProfileName: cloudName,
-		RetryConfig: cloud.RetryConfig{
-			MaxRetries:       5,
-			BaseDelay:        2 * time.Second,
-			MaxDelay:         10 * time.Second,
-			OperationTimeout: 30 * time.Second,
-		},
-	}
-
-	if err := openstackClient.NewClient(); err != nil {
-		return openstack.Client{}, err
-	}
-
-	return openstackClient, nil
 }

@@ -237,7 +237,7 @@ func AllVMDiskIOEnforcement(
 
 	// Establish OpenStack connection for metadata and QoS lookup.
 	logger.Debug("Attempting to connect to openstack")
-	ostk, err := ConnectToOpenstack(cloudName)
+	ostk, err := openstack.ConnectToOpenstack(cloudName)
 	if err != nil {
 		logger.Error("Failed to connect to Openstack", "err", err)
 		return
@@ -293,7 +293,7 @@ func AllVMDiskIOEnforcement(
 
 	// Close the channel to signal workers that no more jobs are coming.
 	close(jobs)
-	
+
 	// Block until all workers have completed their tasks.
 	VMDiskIOEnforcementWG.Wait()
 

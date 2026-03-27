@@ -33,7 +33,15 @@ func (n *NATSInstance) Connect() error {
 		n.ClientIdentifier = strings.ReplaceAll(fmt.Sprintf("virtenf-%s", hostname), ".", "-")
 	}
 
-	ns, err := nats.Connect(n.URL, nats.Name(n.ClientIdentifier))
+	opts := []nats.Option{
+		nats.Name(n.ClientIdentifier),
+	}
+
+	if n.Username != "" && n.Password != "" {
+		opts = append(opts, nats.UserInfo(n.Username, n.Password))
+	}
+
+	ns, err := nats.Connect(n.URL, opts...)
 	if err != nil {
 		return err
 	}
