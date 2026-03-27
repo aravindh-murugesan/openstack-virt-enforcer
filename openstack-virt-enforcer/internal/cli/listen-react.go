@@ -1,8 +1,13 @@
 package cli
 
 import (
-	"github.com/aravindh-murugesan/openstack-virt-enforcer/openstack-virt-enforcer/internal/notification"
+	"fmt"
+
+	"github.com/aravindh-murugesan/openstack-virt-enforcer/openstack-virt-enforcer/internal/cloud/openstack"
+	ebnats "github.com/aravindh-murugesan/openstack-virt-enforcer/openstack-virt-enforcer/internal/event/eb-nats"
+	"github.com/aravindh-murugesan/openstack-virt-enforcer/openstack-virt-enforcer/internal/virt"
 	"github.com/aravindh-murugesan/openstack-virt-enforcer/openstack-virt-enforcer/internal/workflow"
+	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 )
 
@@ -15,21 +20,70 @@ var daemonCommand = &cobra.Command{
 	Use:     "listen-n-react",
 	GroupID: "ve",
 	Short:   "A Daemon process that hooks to libvirt's broadcast events and reacts to it in real-time.",
-	Run: func(cmd *cobra.Command, args []string) {
-		webhookProvider := notification.Webhook{
-			URL:      webhookURL,
-			Username: webhookUsername,
-			Password: webhookPassword,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		// webhookProvider := notification.Webhook{
+		// 	URL:      webhookURL,
+		// 	Username: webhookUsername,
+		// 	Password: webhookPassword,
+		// }
+
+		// nats := ebnats.NATSInstance{
+		// 	URL:      natsURL,
+		// 	Password: natsPassword,
+		// 	Username: natsUser,
+		// }
+
+		// workflow.LibvirtListenReact(
+		// 	libvirtURL,
+		// 	cloudName,
+		// 	baseQOSPolicy,
+		// 	timeout,
+		// 	logLevel,
+		// 	webhookProvider,
+		// 	nats,
+		// )
+		libvirtConnection, err := virt.ConnectToLibvirt(libvirtURL)
+		if err != nil {
+			return fmt.Errorf("Unable to connect to libvirt: %w", err)
 		}
 
-		workflow.LibvirtListenReact(
-			libvirtURL,
-			cloudName,
-			baseQOSPolicy,
-			timeout,
-			logLevel,
-			webhookProvider,
+		openstackConnection, err := openstack.ConnectToOpenstack(cloudName)
+		if err != nil {
+			return fmt.Errorf("Unable to connect to openstack: %w", err)
+		}
+
+		nats := ebnats.NATSInstance{
+			URL:      natsURL,
+			Password: natsPassword,
+			Username: natsUser,
+		}
+		nats.Connect()
+
+		conns := workflow.Connections{
+			Libvirt:   libvirtConnection,
+			Openstack: &openstackConnection,
+			Nats:      &nats,
+		}
+
+		opts := workflow.DaemonOpts{
+			LibvirtControllers: workflow.LibvirtDaemonOpts{
+				IoTuneEnforcement: workflow.EnforceIoTuneOpts{
+					BaseQoSPolicy: baseQOSPolicy,
+					Enforce:       true,
+					AuditInterval: daemonIoTuneAuditInterval,
+				},
+			},
+		}
+
+		workflow.LibvirtListenAndReact(
+			conns,
+			opts,
+			workflow.Logger{
+				Level:       logLevel,
+				GlobalRunID: fmt.Sprintf("ve-%s", uuid.NewString()),
+			},
 		)
+		return nil
 	},
 }
 
@@ -39,5 +93,6 @@ func init() {
 
 	// Define mandatory fallback policy flag.
 	daemonCommand.Flags().StringVar(&baseQOSPolicy, "base-qos-policy", "", "Base QOS Spec to fallback when there is no iops metadata in openstack volumes. This has to exist on openstack (Required)")
+	daemonCommand.Flags().IntVar(&daemonIoTuneAuditInterval, "iotune-audit-interval", 30, "Run disk audit against openstack per x mins")
 	daemonCommand.MarkFlagRequired("base-qos-policy")
 }

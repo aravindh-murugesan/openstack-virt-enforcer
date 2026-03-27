@@ -7,14 +7,19 @@ import (
 )
 
 var (
-	libvirtURL      string
-	cloudName       string
-	logLevel        string
-	timeout         int
-	webhookURL      string
-	webhookUsername string
-	webhookPassword string
-	baseQOSPolicy   string
+	libvirtURL                string
+	cloudName                 string
+	logLevel                  string
+	timeout                   int
+	webhookURL                string
+	webhookUsername           string
+	webhookPassword           string
+	baseQOSPolicy             string
+	natsURL                   string
+	natsUser                  string
+	natsPassword              string
+	iopsDomainName            string
+	daemonIoTuneAuditInterval int
 )
 
 // rootCommand defines the base entry point for the OpenStack Virt Enforcer CLI.
@@ -64,4 +69,8 @@ func init() {
 	rootCommand.PersistentFlags().StringVar(&webhookUsername, "webhook-username", "", "Webhook username for alerting")
 	rootCommand.PersistentFlags().StringVar(&webhookPassword, "webhook-password", "", "Webhook password for alerting")
 
+	// Nats configuration for event queue
+	rootCommand.PersistentFlags().StringVar(&natsURL, "nats-url", "", "Connection URL for NATS instance")
+	rootCommand.PersistentFlags().StringVar(&natsUser, "nats-user", "", "User for NATS instance")
+	rootCommand.PersistentFlags().StringVar(&natsPassword, "nats-password", "", "Password for NATS instance")
 }

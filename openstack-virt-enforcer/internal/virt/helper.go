@@ -2,6 +2,7 @@ package virt
 
 import (
 	"fmt"
+	"net/url"
 
 	"github.com/digitalocean/go-libvirt"
 )
@@ -144,4 +145,28 @@ func ParseLifecycle(eventID int32, detailID int32) (string, string) {
 	default:
 		return "UNKNOWN_EVENT", fmt.Sprintf("Event: %d | Detail: %d", eventID, detailID)
 	}
+}
+
+// ConnectToLibvirt establishes a connection to a Libvirt daemon via a URI.
+//
+// If the provided connUrl is empty, it defaults to the local QEMU system
+// socket (qemu:///system). It returns an error if the URI is malformed or
+// if the connection cannot be established.
+func ConnectToLibvirt(connUrl string) (*libvirt.Libvirt, error) {
+
+	if connUrl == "" {
+		connUrl = string(libvirt.QEMUSystem)
+	}
+
+	validatedURL, err := url.Parse(connUrl)
+	if err != nil {
+		return nil, err
+	}
+
+	libirtConnection, err := libvirt.ConnectToURI(validatedURL)
+	if err != nil {
+		return nil, err
+	}
+
+	return libirtConnection, nil
 }

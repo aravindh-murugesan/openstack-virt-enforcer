@@ -94,6 +94,7 @@ func (c *Client) NewClient() error {
 		if err != nil {
 			return err
 		}
+		ao.AllowReauth = true
 
 		err = openstack.Authenticate(ctx, p, *ao)
 		if err != nil {

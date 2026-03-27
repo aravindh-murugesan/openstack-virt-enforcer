@@ -129,3 +129,36 @@ func ExecuteAction(ctx context.Context, cfg cloud.RetryConfig, opName string, op
 
 	return fmt.Errorf("%s failed after %d retries: %w", opName, cfg.MaxRetries, lastErr)
 }
+
+// ConnectToOpenstack initializes an OpenStack client based on a local profile name.
+//
+// It configures the client with an exponential backoff retry strategy:
+//   - MaxRetries: 5
+//   - BaseDelay: 2 seconds
+//   - MaxDelay: 10 seconds
+//   - OperationTimeout: 30 seconds
+//
+// It returns an initialized [openstack.Client] or an error if the profile
+// cannot be authenticated or the service endpoints cannot be resolved.
+func ConnectToOpenstack(cloudName string) (Client, error) {
+
+	if cloudName == "" {
+		return Client{}, fmt.Errorf("Cloud profile cannot be empty")
+	}
+
+	openstackClient := Client{
+		ProfileName: cloudName,
+		RetryConfig: cloud.RetryConfig{
+			MaxRetries:       5,
+			BaseDelay:        2 * time.Second,
+			MaxDelay:         10 * time.Second,
+			OperationTimeout: 30 * time.Second,
+		},
+	}
+
+	if err := openstackClient.NewClient(); err != nil {
+		return Client{}, err
+	}
+
+	return openstackClient, nil
+}
