@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"log/slog"
 
 	"github.com/aravindh-murugesan/openstack-virt-enforcer/openstack-virt-enforcer/internal/cloud/openstack"
 	ebnats "github.com/aravindh-murugesan/openstack-virt-enforcer/openstack-virt-enforcer/internal/event/eb-nats"
@@ -57,7 +58,9 @@ var daemonCommand = &cobra.Command{
 			Password: natsPassword,
 			Username: natsUser,
 		}
-		nats.Connect()
+		if err := nats.Connect(); err != nil {
+			slog.Error("Unable to connect to nats", "err", err)
+		}
 
 		conns := workflow.Connections{
 			Libvirt:   libvirtConnection,
