@@ -1,0 +1,13 @@
+{{ virt_enforcer_log_path }}/*.log {
+{{ virt_enforcer_log_frequency }}
+rotate {{ virt_enforcer_log_retention_days }}
+size {{ virt_enforcer_log_size }}
+missingok
+notifempty
+compress
+delaycompress
+copytruncate
+dateext
+dateformat -%Y%m%d-%s
+create 0640 {{ virt_enforcer_user }} {{ virt_enforcer_group }}
+}

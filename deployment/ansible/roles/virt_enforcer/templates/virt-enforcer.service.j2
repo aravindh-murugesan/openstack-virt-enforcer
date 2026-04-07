@@ -1,0 +1,39 @@
+[Unit]
+Description=OpenStack Virt Enforcer Service ({{ virt_enforcer_service_name }})
+After=network.target libvirtd.service
+Requires=libvirtd.service
+
+[Service]
+Type=simple
+User={{ virt_enforcer_user }}
+Group={{ virt_enforcer_group }}
+EnvironmentFile={{ virt_enforcer_config_path }}/{{ virt_enforcer_service_name }}.env
+ExecStart={{ virt_enforcer_install_path }}/{{ virt_enforcer_binary_name }} listen-n-react $DAEMON_ARGS
+StandardOutput=append:{{ virt_enforcer_log_path }}/{{ virt_enforcer_service_name }}.log
+StandardError=append:{{ virt_enforcer_log_path }}/{{ virt_enforcer_service_name }}.log
+Restart=always
+RestartSec=5
+LimitNOFILE=65536
+
+# Security Hardening
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+MemoryDenyWriteExecute=true
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+LockPersonality=true
+ProtectHostname=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+# Allow only Unix socket (libvirt) and IP (OpenStack/NATS)
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+# CapabilityBoundingSet= (uncomment if no specific capabilities are required)
+# SystemCallFilter=@system-service (uncomment after thorough testing)
+
+[Install]
+WantedBy=multi-user.target

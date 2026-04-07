@@ -1,0 +1,8 @@
+[baremetal]
+# Add your baremetal nodes here
+# hypervisor-01 ansible_host=10.0.0.11
+# hypervisor-02 ansible_host=10.0.0.12
+
+[baremetal:vars]
+# You can set per-group variables here
+# ansible_user=ubuntu

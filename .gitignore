@@ -33,3 +33,5 @@ go.work.sum
 
 # Builds
 build/
+deployment/ansible/customizations.yaml
+deployment/ansible/inventory.ini

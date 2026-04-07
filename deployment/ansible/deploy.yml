@@ -1,0 +1,10 @@
+---
+# Deployment of openstack-virt-enforcer to bare-metal nodes
+
+- name: Deploy OpenStack Virt Enforcer
+  hosts: baremetal
+  gather_facts: false
+  become: true
+  roles:
+    - role: virt_enforcer
+      tags: virt_enforcer

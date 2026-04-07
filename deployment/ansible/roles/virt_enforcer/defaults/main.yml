@@ -1,0 +1,61 @@
+---
+# Default variable values for the virt_enforcer role
+
+# Deployment settings
+virt_enforcer_user: "virt-enforcer"
+virt_enforcer_group: "virt-enforcer"
+virt_enforcer_libvirt_group: "libvirt"
+virt_enforcer_shell: "/sbin/nologin"
+
+# Package settings
+virt_enforcer_package_path: "../../.build/"
+virt_enforcer_binary_name: "openstack-virt-enforcer"
+virt_enforcer_install_path: "/usr/local/bin"
+
+# Systemd settings
+virt_enforcer_service_name: "openstack-virt-enforcer"
+virt_enforcer_config_path: "/etc/openstack-virt-enforcer"
+virt_enforcer_log_path: "/var/log/{{ virt_enforcer_service_name }}"
+
+# Log Rotation settings
+virt_enforcer_log_retention_days: 7
+virt_enforcer_log_size: "100M"
+virt_enforcer_log_frequency: "daily"
+
+# Cloud settings
+virt_enforcer_manage_clouds_yaml: false
+virt_enforcer_clouds_yaml_path: "/etc/openstack/clouds.yaml"
+virt_enforcer_clouds_yaml_content: |
+  clouds:
+    openstack-virt-enforcer:
+      auth:
+        auth_url: "http://openstack:5000/v3"
+        project_name: "admin"
+        username: "admin"
+        password: "password"
+        user_domain_name: "Default"
+        project_domain_name: "Default"
+      region_name: "RegionOne"
+      interface: "public"
+      identity_api_version: 3
+
+# Application flags (defaults)
+virt_enforcer_cloud_name: "openstack-virt-enforcer"
+virt_enforcer_base_qos_policy: "virt-enforcer-base"
+virt_enforcer_libvirt_url: "qemu:///system"
+virt_enforcer_log_level: "info"
+virt_enforcer_timeout: 0
+virt_enforcer_iotune_audit_interval: 30
+
+# NATS settings
+virt_enforcer_nats_url: ""
+virt_enforcer_nats_user: ""
+virt_enforcer_nats_password: ""
+
+# Webhook settings
+virt_enforcer_webhook_url: ""
+virt_enforcer_webhook_username: ""
+virt_enforcer_webhook_password: ""
+
+# Map-based flags
+virt_enforcer_max_volume_type_iops_limit: {}

@@ -1,0 +1,24 @@
+---
+# Global variables for all hosts
+# These override defaults in roles/virt_enforcer/defaults/main.yml
+
+# Required flags for the enforcer
+virt_enforcer_cloud_name: "openstack-virt-enforcer"
+virt_enforcer_base_qos_policy: "virt-enforcer-base"
+
+# NATS Configuration
+virt_enforcer_nats_url: "nats://nats.example.com:4222"
+virt_enforcer_nats_user: "enforcer-user"
+virt_enforcer_nats_password: "enforcer-password"
+
+# Example mapping for volume type IOPS limits
+virt_enforcer_max_volume_type_iops_limit:
+  ssd: 1000
+  hdd: 500
+
+# Custom binary and service name if needed
+# virt_enforcer_binary_name: "openstack-virt-enforcer"
+# virt_enforcer_service_name: "enforcer-daemon"
+
+# Option to skip managing clouds.yaml if it's already there
+# virt_enforcer_manage_clouds_yaml: false

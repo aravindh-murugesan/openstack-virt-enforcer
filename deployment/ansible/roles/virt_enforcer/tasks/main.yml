@@ -1,0 +1,133 @@
+---
+# Tasks for openstack-virt-enforcer deployment
+
+- name: Create virt-enforcer group
+  ansible.builtin.group:
+    name: "{{ virt_enforcer_group }}"
+    state: present
+
+- name: Create virt-enforcer user
+  ansible.builtin.user:
+    name: "{{ virt_enforcer_user }}"
+    group: "{{ virt_enforcer_group }}"
+    groups: "{{ virt_enforcer_libvirt_group }}"
+    append: yes
+    shell: "{{ virt_enforcer_shell }}"
+    system: yes
+    create_home: no
+    state: present
+
+- name: Create configuration directory
+  ansible.builtin.file:
+    path: "{{ virt_enforcer_config_path }}"
+    state: directory
+    owner: "{{ virt_enforcer_user }}"
+    group: "{{ virt_enforcer_group }}"
+    mode: '0755'
+
+- name: Create log directory
+  ansible.builtin.file:
+    path: "{{ virt_enforcer_log_path }}"
+    state: directory
+    owner: "{{ virt_enforcer_user }}"
+    group: "{{ virt_enforcer_group }}"
+    mode: '0755'
+
+- name: Create openstack configuration directory
+  ansible.builtin.file:
+    path: "{{ virt_enforcer_clouds_yaml_path | dirname }}"
+    state: directory
+    owner: "{{ virt_enforcer_user }}"
+    group: "{{ virt_enforcer_group }}"
+    mode: '0755'
+  when: virt_enforcer_manage_clouds_yaml | bool
+
+- name: Stat clouds.yaml
+  ansible.builtin.stat:
+    path: "{{ virt_enforcer_clouds_yaml_path }}"
+  register: clouds_yaml_stat
+  when: virt_enforcer_manage_clouds_yaml | bool
+
+- name: Slurp existing clouds.yaml
+  ansible.builtin.slurp:
+    src: "{{ virt_enforcer_clouds_yaml_path }}"
+  register: clouds_yaml_slurp
+  when:
+    - virt_enforcer_manage_clouds_yaml | bool
+    - clouds_yaml_stat.stat.exists
+
+- name: Combine clouds.yaml content
+  ansible.builtin.set_fact:
+    final_clouds_yaml: >-
+      {{
+        (clouds_yaml_slurp.content | b64decode | from_yaml | default({'clouds': {}}))
+        | combine(virt_enforcer_clouds_yaml_content | from_yaml, recursive=True)
+      }}
+  when:
+    - virt_enforcer_manage_clouds_yaml | bool
+    - clouds_yaml_stat.stat.exists
+
+- name: Deploy merged clouds.yaml
+  ansible.builtin.copy:
+    content: "{{ final_clouds_yaml | to_nice_yaml }}"
+    dest: "{{ virt_enforcer_clouds_yaml_path }}"
+    owner: "{{ virt_enforcer_user }}"
+    group: "{{ virt_enforcer_group }}"
+    mode: '0600'
+  when:
+    - virt_enforcer_manage_clouds_yaml | bool
+    - clouds_yaml_stat.stat.exists
+
+- name: Deploy new clouds.yaml if it does not exist
+  ansible.builtin.copy:
+    content: "{{ virt_enforcer_clouds_yaml_content }}"
+    dest: "{{ virt_enforcer_clouds_yaml_path }}"
+    owner: "{{ virt_enforcer_user }}"
+    group: "{{ virt_enforcer_group }}"
+    mode: '0600'
+  when:
+    - virt_enforcer_manage_clouds_yaml | bool
+    - not clouds_yaml_stat.stat.exists
+
+- name: Copy binary to nodes
+  ansible.builtin.copy:
+    src: "{{ virt_enforcer_package_path }}/{{ virt_enforcer_binary_name }}"
+    dest: "{{ virt_enforcer_install_path }}/{{ virt_enforcer_binary_name }}"
+    owner: root
+    group: root
+    mode: '0755'
+  notify: Restart virt-enforcer
+
+- name: Deploy environment file
+  ansible.builtin.template:
+    src: virt-enforcer.env.j2
+    dest: "{{ virt_enforcer_config_path }}/{{ virt_enforcer_service_name }}.env"
+    owner: root
+    group: "{{ virt_enforcer_group }}"
+    mode: '0640'
+  notify: Restart virt-enforcer
+
+- name: Deploy systemd service unit
+  ansible.builtin.template:
+    src: virt-enforcer.service.j2
+    dest: "/etc/systemd/system/{{ virt_enforcer_service_name }}.service"
+    owner: root
+    group: root
+    mode: '0644'
+  notify:
+    - Reload systemd
+    - Restart virt-enforcer
+
+- name: Deploy logrotate configuration
+  ansible.builtin.template:
+    src: virt-enforcer.logrotate.j2
+    dest: "/etc/logrotate.d/{{ virt_enforcer_service_name }}"
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Ensure service is started and enabled
+  ansible.builtin.systemd:
+    name: "{{ virt_enforcer_service_name }}"
+    state: started
+    enabled: yes

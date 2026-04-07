@@ -1,0 +1,11 @@
+---
+# Handlers for openstack-virt-enforcer deployment
+
+- name: Reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: yes
+
+- name: Restart virt-enforcer
+  ansible.builtin.systemd:
+    name: "{{ virt_enforcer_service_name }}"
+    state: restarted
