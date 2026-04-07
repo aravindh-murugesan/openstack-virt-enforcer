@@ -20,6 +20,7 @@ var (
 	natsPassword              string
 	iopsDomainName            string
 	daemonIoTuneAuditInterval int
+	volTypeIOPSLimit          map[string]string
 )
 
 // rootCommand defines the base entry point for the OpenStack Virt Enforcer CLI.

@@ -3,8 +3,6 @@ package workflow
 import (
 	"context"
 	"fmt"
-	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -80,35 +78,40 @@ func EnforceIoTuneForDomain(conns Connections, opts EnforceIoTuneOpts, logger Lo
 		if !ok {
 			dLogger.Warn("Failed to identify IO Policy override in cinder metadata. Attempting base policy")
 		} else {
-			policyOverride := strings.Split(volumeQOSPolicyOverride, ",")
-			if len(policyOverride) == 3 {
-				totalIOPSValue, terr := strconv.Atoi(policyOverride[0])
-				writeIOPSValue, werr := strconv.Atoi(policyOverride[1])
-				readIOPSValue, rerr := strconv.Atoi(policyOverride[2])
-
-				if terr != nil || werr != nil || rerr != nil {
-					dLogger.Error(
-						"Unable to formulate the iops limit values from cinder metadata",
-						"totalIOPSError", terr,
-						"writeIOPSError", werr,
-						"readIOPSError", rerr,
-					)
+			i, err := ParseIotuneInput(volumeQOSPolicyOverride)
+			if err != nil {
+				dLogger.Error("Failed to parse IO Tune values from cinder metadata", "err", err)
+			} else {
+				isIOTuneOK = true
+				diskIOTunePolicy = i
+			}
+		}
+		
+		// Check for max iops limit for each volume type, to avoid abuses and misconfigurations.
+		if isIOTuneOK {
+			// Check if the current volume type has any max values defined.
+			maxLimitsStr, ok := opts.VolumeTypeMaxIopsLimit[diskInfoCinder.VolumeType]
+			if !ok {
+				dLogger.Debug("No maximum iops limits are provided for the volume type", "type", diskInfoCinder.VolumeType)
+			} else {
+				ml, err := ParseIotuneInput(maxLimitsStr)
+				if err != nil {
+					dLogger.Error("Failed to parse iotune limit for volume type. IO Tune policy will be applied as per the provided metadata as is", "type", diskInfoCinder.VolumeType, "err", err)
 				} else {
-					dLogger.Info("Successfully obtained QOS values from volume metadata", "values", policyOverride)
-					// Prioritize Total IOPS if provided; otherwise, apply specific Read/Write limits.
-					if totalIOPSValue != 0 {
-						diskIOTunePolicy = virt.IOTune{
-							TotalIopsSec: uint64(totalIOPSValue),
-							SizeIopsSec:  16384,
-						}
-						isIOTuneOK = true
-					} else {
-						diskIOTunePolicy = virt.IOTune{
-							WriteIopsSec: uint64(writeIOPSValue),
-							ReadIopsSec:  uint64(readIOPSValue),
-							SizeIopsSec:  16384,
-						}
-						isIOTuneOK = true
+					/* If any of the parsed iotune meta from cinder volume exceeds the limit,
+					We fall back to the default IOTune policy as per the base qos spec.
+					This is intentional.
+					(TODO: Should we make this fallback to the base policy or should it enforce the max limit for the policy)
+					*/
+					if diskIOTunePolicy.TotalIopsSec > ml.TotalIopsSec ||
+						diskIOTunePolicy.WriteIopsSec > ml.WriteIopsSec ||
+						diskIOTunePolicy.ReadIopsSec > ml.ReadIopsSec {
+
+						dLogger.Warn(
+							"Iotune limits in cinder metadata exceeds the maximum limit for the volume type. Base policy will be enforced.",
+							"type", diskInfoCinder.VolumeType,
+						)
+						isIOTuneOK = false
 					}
 				}
 			}

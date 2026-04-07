@@ -48,12 +48,13 @@ type Connections struct {
 }
 
 type EnforceIoTuneOpts struct {
-	DomainID      string    `json:"domain_id"`
-	DiskID        string    `json:"cinder_disk_id"`
-	Enforce       bool      `json:"should_enforce"` // If this is false, it will only audit the discrapencies
-	OpenstackQoS  []qos.QoS `json:"openstack_qos"`
-	BaseQoSPolicy string    `json:"openstack_base_qos"`
-	AuditInterval int       `json:"iotune_audit"`
+	DomainID               string            `json:"domain_id"`
+	DiskID                 string            `json:"cinder_disk_id"`
+	Enforce                bool              `json:"should_enforce"` // If this is false, it will only audit the discrapencies
+	OpenstackQoS           []qos.QoS         `json:"openstack_qos"`
+	BaseQoSPolicy          string            `json:"openstack_base_qos"`
+	AuditInterval          int               `json:"iotune_audit"`
+	VolumeTypeMaxIopsLimit map[string]string `json:"volume_type_max_iops_limit"`
 }
 
 type EnforceIoTuneResult struct {

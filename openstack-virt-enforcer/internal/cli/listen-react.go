@@ -68,9 +68,10 @@ var daemonCommand = &cobra.Command{
 		opts := workflow.DaemonOpts{
 			LibvirtControllers: workflow.LibvirtDaemonOpts{
 				IoTuneEnforcement: workflow.EnforceIoTuneOpts{
-					BaseQoSPolicy: baseQOSPolicy,
-					Enforce:       true,
-					AuditInterval: daemonIoTuneAuditInterval,
+					BaseQoSPolicy:          baseQOSPolicy,
+					Enforce:                true,
+					AuditInterval:          daemonIoTuneAuditInterval,
+					VolumeTypeMaxIopsLimit: volTypeIOPSLimit,
 				},
 			},
 		}
@@ -92,6 +93,7 @@ func init() {
 	rootCommand.AddCommand(daemonCommand)
 
 	// Define mandatory fallback policy flag.
+	daemonCommand.Flags().StringToStringVar(&volTypeIOPSLimit, "max-volume-type-iops-limit", map[string]string{}, "Maximum IOPS limit that can be set for a specific volume type.")
 	daemonCommand.Flags().StringVar(&baseQOSPolicy, "base-qos-policy", "", "Base QOS Spec to fallback when there is no iops metadata in openstack volumes. This has to exist on openstack (Required)")
 	daemonCommand.Flags().IntVar(&daemonIoTuneAuditInterval, "iotune-audit-interval", 30, "Run disk audit against openstack per x mins")
 	daemonCommand.MarkFlagRequired("base-qos-policy")

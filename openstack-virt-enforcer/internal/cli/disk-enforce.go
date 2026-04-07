@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"log/slog"
 
 	"github.com/aravindh-murugesan/openstack-virt-enforcer/openstack-virt-enforcer/internal/cloud/openstack"
 	"github.com/aravindh-murugesan/openstack-virt-enforcer/openstack-virt-enforcer/internal/virt"
@@ -42,8 +43,9 @@ var diskEnforceDomains = &cobra.Command{
 		workflow.EnforceIoTuneForAllDomain(
 			conns,
 			workflow.EnforceIoTuneOpts{
-				Enforce:       true,
-				BaseQoSPolicy: baseQOSPolicy,
+				Enforce:                true,
+				BaseQoSPolicy:          baseQOSPolicy,
+				VolumeTypeMaxIopsLimit: volTypeIOPSLimit,
 			},
 			workflow.Logger{
 				Level:       logLevel,
@@ -80,9 +82,10 @@ var diskEnforceDomain = &cobra.Command{
 		workflow.EnforceIoTuneForDomain(
 			conns,
 			workflow.EnforceIoTuneOpts{
-				DomainID:      iopsDomainName,
-				Enforce:       true,
-				BaseQoSPolicy: baseQOSPolicy,
+				DomainID:               iopsDomainName,
+				Enforce:                true,
+				BaseQoSPolicy:          baseQOSPolicy,
+				VolumeTypeMaxIopsLimit: volTypeIOPSLimit,
 			},
 			workflow.Logger{
 				Level: logLevel,
@@ -99,13 +102,12 @@ func init() {
 	iops.AddCommand(diskEnforceDomains)
 	iops.AddCommand(diskEnforceDomain)
 
-	// Define specific flags for the bulk enforcement command.
-	diskEnforceDomains.Flags().StringVar(&baseQOSPolicy, "base-qos-policy", "", "Base QOS Spec to fallback when there is no iops metadata in openstack volumes. This has to exist on openstack (Required)")
-	diskEnforceDomains.MarkFlagRequired("base-qos-policy")
+	iops.PersistentFlags().StringToStringVar(&volTypeIOPSLimit, "max-volume-type-iops-limit", map[string]string{}, "Maximum IOPS limit that can be set for a specific volume type.")
 
-	// Define specific flags for the per-domain enforcement command.
-	diskEnforceDomain.Flags().StringVar(&baseQOSPolicy, "base-qos-policy", "", "Base QOS Spec to fallback when there is no iops metadata in openstack volumes. This has to exist on openstack (Required)")
-	diskEnforceDomain.MarkFlagRequired("base-qos-policy")
+	// Define specific flags for the bulk enforcement command.
+	iops.PersistentFlags().StringVar(&baseQOSPolicy, "base-qos-policy", "", "Base QOS Spec to fallback when there is no iops metadata in openstack volumes. This has to exist on openstack (Required)")
+	iops.MarkFlagRequired("base-qos-policy")
+
 	diskEnforceDomain.Flags().StringVar(&iopsDomainName, "domain-name", "", "Name of the domain to enforce IOTune Values")
 	diskEnforceDomain.MarkFlagRequired("domain-name")
 
